@@ -148,11 +148,11 @@ jokes = [['Where does a vampire water-ski', 'On Lake Erie.'],
 joke = choice(jokes)
 
 printer.inverseOn()
-printer.print('{}?\n'.format(joke[0]))
+printer.print(f'{joke[0]}?\n')
 printer.inverseOff()
 
 printer.underlineOn()
-printer.print('{}\n'.format(joke[1]))
+printer.print(f'{joke[1]}\n')
 printer.underlineOff()
 
 printer.feed(4)

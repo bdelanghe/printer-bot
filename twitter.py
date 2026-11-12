@@ -53,8 +53,7 @@ authUrl   = '/oauth2/token'
 searchUrl = '/1.1/search/tweets.json?'
 agent     = 'Gutenbird v1.0'
 # lastID is command line value (if passed), else 1
-if len(sys.argv) > 1: lastId = sys.argv[1]
-else:                 lastId = '1'
+lastId = sys.argv[1] if len(sys.argv) > 1 else '1'
 
 # Initiate an HTTPS connection/request, uncompress and JSON-decode results
 def issueRequestAndDecodeResponse(method, url, body, headers):
@@ -76,27 +75,37 @@ def issueRequestAndDecodeResponse(method, url, body, headers):
 # Get access token. --------------------------------------------------------
 
 token = issueRequestAndDecodeResponse(
-  'POST', authUrl, 'grant_type=client_credentials',
-   {'Host'            : host,
-    'User-Agent'      : agent,
-    'Accept-Encoding' : 'gzip',
-    'Content-Type'    : 'application/x-www-form-urlencoded;charset=UTF-8',
-    'Authorization'   : 'Basic ' + base64.b64encode(
-     urllib.quote(consumer_key) + ':' + urllib.quote(consumer_secret))}
-  )['access_token']
+    'POST',
+    authUrl,
+    'grant_type=client_credentials',
+    {
+        'Host':
+        host,
+        'User-Agent':
+        agent,
+        'Accept-Encoding':
+        'gzip',
+        'Content-Type':
+        'application/x-www-form-urlencoded;charset=UTF-8',
+        'Authorization':
+        f"Basic {base64.b64encode(f'{urllib.quote(consumer_key)}:{urllib.quote(consumer_secret)}')}",
+    },
+)['access_token']
 
 
 # Perform search. ----------------------------------------------------------
 
 data = issueRequestAndDecodeResponse(
-  'GET',
-  (searchUrl + 'count=3&since_id=%s&q=%s' %
-   (lastId, urllib.quote(queryString))),
-  None,
-  {'Host'            : host,
-   'User-Agent'      : agent,
-   'Accept-Encoding' : 'gzip',
-   'Authorization'   : 'Bearer ' + token})
+    'GET',
+    f'{searchUrl}count=3&since_id={lastId}&q={urllib.quote(queryString)}',
+    None,
+    {
+        'Host': host,
+        'User-Agent': agent,
+        'Accept-Encoding': 'gzip',
+        'Authorization': f'Bearer {token}',
+    },
+)
 
 
 # Display results. ---------------------------------------------------------

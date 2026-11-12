@@ -60,7 +60,7 @@ class Adafruit_Thermal(Serial):
 		# to stdout, to be piped through 'lp -o raw' (old behavior
 		# was to use default port & baud rate).
 		baudrate = 19200
-		if len(args) == 0:
+		if not args:
 			self.writeToStdout = True
 		if len(args) == 1:
 			# If only port is passed, use default baud rate.
@@ -272,7 +272,7 @@ class Adafruit_Thermal(Serial):
 		  self.dotFeedTime * (6 * 26 + 30))
 
 	def setBarcodeHeight(self, val=50):
-		if val < 1: val = 1
+		val = max(val, 1)
 		self.barcodeHeight = val
 		self.writeBytes(29, 104, val)
 
@@ -323,10 +323,7 @@ class Adafruit_Thermal(Serial):
 			self.CODABAR : -1
 		}
 
-		if self.firmwareVersion >= 264:
-			n = newDict[type]
-		else:
-			n = oldDict[type]
+		n = newDict[type] if self.firmwareVersion >= 264 else oldDict[type]
 		if n == -1: return
 		self.feed(1) # Recent firmware requires this?
 		self.writeBytes(
@@ -339,7 +336,7 @@ class Adafruit_Thermal(Serial):
 		if self.firmwareVersion >= 264:
 			# Recent firmware: write length byte + string sans NUL
 			n = len(text)
-			if n > 255: n = 255
+			n = min(n, 255)
 			if self.writeToStdout:
 				sys.stdout.write(chr(n))
 				for i in range(n):
@@ -349,12 +346,10 @@ class Adafruit_Thermal(Serial):
 				for i in range(n):
 					super(Adafruit_Thermal,
 					  self).write(text[i])
+		elif self.writeToStdout:
+			sys.stdout.write(text)
 		else:
-			# Older firmware: write string + NUL
-			if self.writeToStdout:
-				sys.stdout.write(text)
-			else:
-				super(Adafruit_Thermal, self).write(text)
+			super(Adafruit_Thermal, self).write(text)
 		self.prevByte = '\n'
 
 	# === Character commands ===
@@ -369,26 +364,14 @@ class Adafruit_Thermal(Serial):
 	def setPrintMode(self, mask):
 		self.printMode |= mask
 		self.writePrintMode()
-		if self.printMode & self.DOUBLE_HEIGHT_MASK:
-			self.charHeight = 48
-		else:
-			self.charHeight = 24
-		if self.printMode & self.DOUBLE_WIDTH_MASK:
-			self.maxColumn  = 16
-		else:
-			self.maxColumn  = 32
+		self.charHeight = 48 if self.printMode & self.DOUBLE_HEIGHT_MASK else 24
+		self.maxColumn = 16 if self.printMode & self.DOUBLE_WIDTH_MASK else 32
 
 	def unsetPrintMode(self, mask):
 		self.printMode &= ~mask
 		self.writePrintMode()
-		if self.printMode & self.DOUBLE_HEIGHT_MASK:
-			self.charHeight = 48
-		else:
-			self.charHeight = 24
-		if self.printMode & self.DOUBLE_WIDTH_MASK:
-			self.maxColumn  = 16
-		else:
-			self.maxColumn  = 32
+		self.charHeight = 48 if self.printMode & self.DOUBLE_HEIGHT_MASK else 24
+		self.maxColumn = 16 if self.printMode & self.DOUBLE_WIDTH_MASK else 32
 
 	def writePrintMode(self):
 		self.writeBytes(27, 33, self.printMode)
@@ -497,7 +480,7 @@ class Adafruit_Thermal(Serial):
 	# 1 - normal underline
 	# 2 - thick underline
 	def underlineOn(self, weight=1):
-		if weight > 2: weight = 2
+		weight = min(weight, 2)
 		self.writeBytes(27, 45, weight)
 
 	def underlineOff(self):
@@ -505,31 +488,23 @@ class Adafruit_Thermal(Serial):
 
 	def printBitmap(self, w, h, bitmap, LaaT=False):
 		rowBytes = (w + 7) / 8  # Round up to next byte boundary
-		if rowBytes >= 48:
-			rowBytesClipped = 48  # 384 pixels max width
-		else:
-			rowBytesClipped = rowBytes
-
+		rowBytesClipped = min(rowBytes, 48)
 		# if LaaT (line-at-a-time) is True, print bitmaps
 		# scanline-at-a-time (rather than in chunks).
 		# This tends to make for much cleaner printing
 		# (no feed gaps) on large images...but has the
 		# opposite effect on small images that would fit
 		# in a single 'chunk', so use carefully!
-		if LaaT: maxChunkHeight = 1
-		else:    maxChunkHeight = 255
-
+		maxChunkHeight = 1 if LaaT else 255
 		i = 0
 		for rowStart in range(0, h, maxChunkHeight):
 			chunkHeight = h - rowStart
-			if chunkHeight > maxChunkHeight:
-				chunkHeight = maxChunkHeight
-
+			chunkHeight = min(chunkHeight, maxChunkHeight)
 			# Timeout wait happens here
 			self.writeBytes(18, 42, chunkHeight, rowBytesClipped)
 
-			for y in range(chunkHeight):
-				for x in range(rowBytesClipped):
+			for _ in range(chunkHeight):
+				for _ in range(rowBytesClipped):
 					if self.writeToStdout:
 						sys.stdout.write(
 						  chr(bitmap[i]))
@@ -557,8 +532,7 @@ class Adafruit_Thermal(Serial):
 
 		width  = image.size[0]
 		height = image.size[1]
-		if width > 384:
-			width = 384
+		width = min(width, 384)
 		rowBytes = (width + 7) / 8
 		bitmap   = bytearray(rowBytes * height)
 		pixels   = image.load()
@@ -607,7 +581,7 @@ class Adafruit_Thermal(Serial):
 			time.sleep(0.05)            # 50 ms
 			self.writeBytes(27, 118, 0) # Sleep off (important!)
 		else:
-			for i in range(10):
+			for _ in range(10):
 				self.writeBytes(27)
 				self.timeoutSet(0.1)
 
@@ -630,7 +604,7 @@ class Adafruit_Thermal(Serial):
 		return stat == 0
 
 	def setLineHeight(self, val=32):
-		if val < 24: val = 24
+		val = max(val, 24)
 		self.lineSpacing = val - 24
 
 		# The printer doesn't take into account the current text
@@ -659,7 +633,7 @@ class Adafruit_Thermal(Serial):
 
 	# Alters some chars in ASCII 0x23-0x7E range; see datasheet
 	def setCharset(self, val=0):
-		if val > 15: val = 15
+		val = min(val, 15)
 		self.writeBytes(27, 82, val)
 
 	CODEPAGE_CP437       =  0 # USA, Standard Europe
@@ -709,7 +683,7 @@ class Adafruit_Thermal(Serial):
 
 	# Selects alt symbols for 'upper' ASCII values 0x80-0xFF
 	def setCodePage(self, val=0):
-		if val > 47: val = 47
+		val = min(val, 47)
 		self.writeBytes(27, 116, val)
 
 	# Copied from Arduino lib for parity; may not work on all printers

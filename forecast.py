@@ -34,16 +34,16 @@ def forecast(idx):
     lo      = data['daily']['data'][idx]['temperatureMin']
     hi      = data['daily']['data'][idx]['temperatureMax']
     cond    = data['daily']['data'][idx]['summary']
-    printer.print(day + ': low ' + str(lo) )
+    printer.print(f'{day}: low {str(lo)}')
     printer.print(deg)
-    printer.print(' high ' + str(hi))
+    printer.print(f' high {str(hi)}')
     printer.print(deg)
     printer.println(' ' + cond.replace(u'\u2013', '-').encode('utf-8')) # take care of pesky unicode dash
 
 printer = Adafruit_Thermal("/dev/serial0", 19200, timeout=5)
 deg     = chr(0xf8) # Degree symbol on thermal printer
 
-url = "https://api.darksky.net/forecast/"+API_KEY+"/"+LAT+","+LONG+"?exclude=[alerts,minutely,hourly,flags]&units=us"
+url = f"https://api.darksky.net/forecast/{API_KEY}/{LAT},{LONG}?exclude=[alerts,minutely,hourly,flags]&units=us"
 response = urllib.urlopen(url)
 data = json.loads(response.read())
 
@@ -62,7 +62,7 @@ temp = data['currently']['temperature']
 cond = data['currently']['summary']
 printer.print(temp)
 printer.print(deg)
-printer.println(' ' + cond)
+printer.println(f' {cond}')
 printer.boldOn()
 
 # Print forecast

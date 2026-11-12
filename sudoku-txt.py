@@ -62,7 +62,7 @@ def makepuzzle(board):
 
 def ratepuzzle(puzzle, samples):
   total = 0
-  for i in xrange(samples):
+  for _ in xrange(samples):
     state, answer = solveboard(puzzle)
     if answer is None: return -1
     total += len(state)
@@ -74,8 +74,7 @@ def checkpuzzle(puzzle, board = None):
   if board is not None and not boardmatches(board, answer): return -1
   difficulty = len(state)
   state, second = solvenext(state)
-  if second is not None: return -1
-  return difficulty
+  return -1 if second is not None else difficulty
 
 def solution(board):
   return solveboard(board)[1]
@@ -106,7 +105,7 @@ def deduce(board):
     # fill in any spots determined by direct conflicts
     allowed, needed = figurebits(board)
     for pos in xrange(81):
-      if None == board[pos]:
+      if board[pos] is None:
         numbers = listbits(allowed[pos])
         if len(numbers) == 0: return []
         elif len(numbers) == 1: board[pos] = numbers[0]; stuck = False
@@ -123,7 +122,7 @@ def deduce(board):
           for y in xrange(9):
             pos = posfor(x, y, axis)
             if allowed[pos] & bit: spots.append(pos)
-          if len(spots) == 0: return []
+          if not spots: return []
           elif len(spots) == 1: board[spots[0]] = n; stuck = False
           elif stuck:
             guess, count = pickbetter(guess, count, [(pos, n) for pos in spots])
@@ -171,8 +170,7 @@ def allowed(board, pos):
 def pickbetter(b, c, t):
   if b is None or len(t) < len(b): return (t, 1)
   if len(t) > len(b): return (b, c)
-  if random.randint(0, c) == 0: return (t, c + 1)
-  else: return (b, c + 1)
+  return (t, c + 1) if random.randint(0, c) == 0 else (b, c + 1)
 
 def entriesforboard(board):
   return [(pos, board[pos]) for pos in xrange(81) if board[pos] is not None]
@@ -183,9 +181,7 @@ def boardforentries(entries):
   return board
 
 def boardmatches(b1, b2):
-  for i in xrange(81):
-    if b1[i] != b2[i]: return False
-  return True
+  return all(b1[i] == b2[i] for i in xrange(81))
 
 def printboard(board):
   # Top edge of board:
@@ -211,63 +207,18 @@ def printboard(board):
        + chr(0xBB) # Top right corner
        + '\n')
   for row in xrange(9):
-    out += ('      ' + chr(0xBA)) # Double Bar
+    out += f'      {chr(186)}'
     for col in xrange(9):
       n = board[posfor(row, col)]
-      if n is None:
-        out += ' '
-      else:
-        out += str(n+1)
-      if (col == 2) or (col == 5) or (col == 8):
-        out += chr(0xBA) # Double bar
-      else:
-        out += chr(0xB3) # Single bar
+      out += ' ' if n is None else str(n+1)
+      out += chr(0xBA) if col in [2, 5, 8] else chr(0xB3)
     out += '\n'
-    if(row < 8):
-      if(row == 2) or (row == 5):
-        out += ('      '
-              + chr(0xCC) # Left 'T' (double)
-              + chr(0xCD) # Horizontal bar
-              + chr(0xD8) # +
-              + chr(0xCD) # Horizontal bar
-              + chr(0xD8) # +
-              + chr(0xCD) # Horizontal bar
-              + chr(0xCE) # Double +
-              + chr(0xCD) # Horizontal bar
-              + chr(0xD8) # +
-              + chr(0xCD) # Horizontal bar
-              + chr(0xD8) # +
-              + chr(0xCD) # Horizontal bar
-              + chr(0xCE) # Double +
-              + chr(0xCD) # Horizontal bar
-              + chr(0xD8) # +
-              + chr(0xCD) # Horizontal bar
-              + chr(0xD8) # +
-              + chr(0xCD) # Horizontal bar
-              + chr(0xB9) # Right 'T' (double)
-              + '\n')
-      else:
-        out += ('      '
-              + chr(0xC7) # Left 'T'
-              + chr(0xC4) # Horizontal bar
-              + chr(0xC5) # +
-              + chr(0xC4) # Horizontal bar
-              + chr(0xC5) # +
-              + chr(0xC4) # Horizontal bar
-              + chr(0xD7) # Double +
-              + chr(0xC4) # Horizontal bar
-              + chr(0xC5) # +
-              + chr(0xC4) # Horizontal bar
-              + chr(0xC5) # +
-              + chr(0xC4) # Horizontal bar
-              + chr(0xD7) # Double +
-              + chr(0xC4) # Horizontal bar
-              + chr(0xC5) # +
-              + chr(0xC4) # Horizontal bar
-              + chr(0xC5) # +
-              + chr(0xC4) # Horizontal bar
-              + chr(0xB6) # Right 'T'
-              + '\n')
+    if (row < 8):
+      out += (
+          f'      {chr(204)}{chr(205)}{chr(216)}{chr(205)}{chr(216)}{chr(205)}{chr(206)}{chr(205)}{chr(216)}{chr(205)}{chr(216)}{chr(205)}{chr(206)}{chr(205)}{chr(216)}{chr(205)}{chr(216)}{chr(205)}{chr(185)}'
+          + '\n' if row in [2, 5] else
+          f'      {chr(199)}{chr(196)}{chr(197)}{chr(196)}{chr(197)}{chr(196)}{chr(215)}{chr(196)}{chr(197)}{chr(196)}{chr(197)}{chr(196)}{chr(215)}{chr(196)}{chr(197)}{chr(196)}{chr(197)}{chr(196)}{chr(182)}'
+          + '\n')
   out += ('      '
         + chr(0xC8) # Bottom left corner
         + chr(0xCD) # Bottom edge
@@ -324,9 +275,8 @@ def basedir():
       return os.curdir
 
 def loadsudokutemplate(ext):
-  f = open(os.path.join(basedir(), 'sudoku-template.%s' % ext), 'r')
-  result = f.read()
-  f.close()
+  with open(os.path.join(basedir(), f'sudoku-template.{ext}'), 'r') as f:
+    result = f.read()
   return result
 
 if __name__ == '__main__':

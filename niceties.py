@@ -29,7 +29,7 @@ recursors = [
 
 # Print nice thing
 printer.inverseOn()
-printer.print(' ' + choice(recursors) + ' \n')
+printer.print(f' {choice(recursors)}' + ' \n')
 printer.inverseOff()
 printer.print(data)
 

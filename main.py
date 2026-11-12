@@ -84,10 +84,10 @@ time.sleep(30)
 
 # Show IP address (if network is available)
 try:
-	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	s.connect(('8.8.8.8', 0))
-	printer.print('My IP address is ' + s.getsockname()[0])
-	printer.feed(5)
+  s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  s.connect(('8.8.8.8', 0))
+  printer.print(f'My IP address is {s.getsockname()[0]}')
+  printer.feed(5)
 except:
 	printer.boldOn()
 	printer.println('Network is unreachable.')
@@ -109,7 +109,7 @@ tapEnable       = False
 holdEnable      = False
 
 # Main loop
-while(True):
+while True:
 
   # Poll current button state and time
   buttonState = GPIO.input(buttonPin)
@@ -119,23 +119,22 @@ while(True):
   if buttonState != prevButtonState:
     prevButtonState = buttonState   # Yes, save new state/time
     prevTime        = t
-  else:                             # Button state unchanged
-    if (t - prevTime) >= holdTime:  # Button held more than 'holdTime'?
-      # Yes it has.  Is the hold action as-yet untriggered?
-      if holdEnable == True:        # Yep!
-        hold()                      # Perform hold action (usu. shutdown)
-        holdEnable = False          # 1 shot...don't repeat hold action
-        tapEnable  = False          # Don't do tap action on release
-    elif (t - prevTime) >= tapTime: # Not holdTime.  tapTime elapsed?
-      # Yes.  Debounced press or release...
-      if buttonState == True:       # Button released?
-        if tapEnable == True:       # Ignore if prior hold()
-          tap()                     # Tap triggered (button released)
-          tapEnable  = False        # Disable tap and hold
-          holdEnable = False
-      else:                         # Button pressed
-        tapEnable  = True           # Enable tap and hold actions
-        holdEnable = True
+  elif (t - prevTime) >= holdTime:  # Button held more than 'holdTime'?
+    # Yes it has.  Is the hold action as-yet untriggered?
+    if holdEnable == True:        # Yep!
+      hold()                      # Perform hold action (usu. shutdown)
+      holdEnable = False          # 1 shot...don't repeat hold action
+      tapEnable  = False          # Don't do tap action on release
+  elif (t - prevTime) >= tapTime: # Not holdTime.  tapTime elapsed?
+    # Yes.  Debounced press or release...
+    if buttonState == True:       # Button released?
+      if tapEnable == True:       # Ignore if prior hold()
+        tap()                     # Tap triggered (button released)
+        tapEnable  = False        # Disable tap and hold
+        holdEnable = False
+    else:                         # Button pressed
+      tapEnable  = True           # Enable tap and hold actions
+      holdEnable = True
 
   # LED blinks while idle, for a brief interval every 2 seconds.
   # Pin 18 is PWM-capable and a "sleep throb" would be nice, but

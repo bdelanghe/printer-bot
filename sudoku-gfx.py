@@ -70,7 +70,7 @@ def makepuzzle(board):
 
 def ratepuzzle(puzzle, samples):
   total = 0
-  for i in xrange(samples):
+  for _ in xrange(samples):
     state, answer = solveboard(puzzle)
     if answer is None: return -1
     total += len(state)
@@ -82,8 +82,7 @@ def checkpuzzle(puzzle, board = None):
   if board is not None and not boardmatches(board, answer): return -1
   difficulty = len(state)
   state, second = solvenext(state)
-  if second is not None: return -1
-  return difficulty
+  return -1 if second is not None else difficulty
 
 def solution(board):
   return solveboard(board)[1]
@@ -114,7 +113,7 @@ def deduce(board):
     # fill in any spots determined by direct conflicts
     allowed, needed = figurebits(board)
     for pos in xrange(81):
-      if None == board[pos]:
+      if board[pos] is None:
         numbers = listbits(allowed[pos])
         if len(numbers) == 0: return []
         elif len(numbers) == 1: board[pos] = numbers[0]; stuck = False
@@ -131,7 +130,7 @@ def deduce(board):
           for y in xrange(9):
             pos = posfor(x, y, axis)
             if allowed[pos] & bit: spots.append(pos)
-          if len(spots) == 0: return []
+          if not spots: return []
           elif len(spots) == 1: board[spots[0]] = n; stuck = False
           elif stuck:
             guess, count = pickbetter(guess, count, [(pos, n) for pos in spots])
@@ -179,8 +178,7 @@ def allowed(board, pos):
 def pickbetter(b, c, t):
   if b is None or len(t) < len(b): return (t, 1)
   if len(t) > len(b): return (b, c)
-  if random.randint(0, c) == 0: return (t, c + 1)
-  else: return (b, c + 1)
+  return (t, c + 1) if random.randint(0, c) == 0 else (b, c + 1)
 
 def entriesforboard(board):
   return [(pos, board[pos]) for pos in xrange(81) if board[pos] is not None]
@@ -191,9 +189,7 @@ def boardforentries(entries):
   return board
 
 def boardmatches(b1, b2):
-  for i in xrange(81):
-    if b1[i] != b2[i]: return False
-  return True
+  return all(b1[i] == b2[i] for i in xrange(81))
 
 def printboard(board):
   bg.paste(img, (0, 0)) # Numbers are cropped off right side
@@ -228,9 +224,8 @@ def basedir():
       return os.curdir
 
 def loadsudokutemplate(ext):
-  f = open(os.path.join(basedir(), 'sudoku-template.%s' % ext), 'r')
-  result = f.read()
-  f.close()
+  with open(os.path.join(basedir(), f'sudoku-template.{ext}'), 'r') as f:
+    result = f.read()
   return result
 
 if __name__ == '__main__':

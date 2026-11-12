@@ -24,7 +24,7 @@ LAT = "40.726019"
 LONG = "-74.00536"
 
 # Fetch weather data from DarkSky, parse resulting JSON
-url = "https://api.darksky.net/forecast/"+API_KEY+"/"+LAT+","+LONG+"?exclude=[alerts,minutely,hourly,flags]&units=us"
+url = f"https://api.darksky.net/forecast/{API_KEY}/{LAT},{LONG}?exclude=[alerts,minutely,hourly,flags]&units=us"
 response = urllib.urlopen(url)
 data = json.loads(response.read())
 
@@ -63,11 +63,10 @@ DirAngle       = [  23,  68, 113, 157, 203, 247, 293, 336 ]
 
 # Generate a list of sub-image glyphs cropped from the symbols image
 def croplist(widths, x, y, height):
-    list = []
-    for i in range(len(widths)):
-        list.append(symbols.crop(
-          [x, y+i*height, x+widths[i], y+(i+1)*height]))
-    return list
+    return [
+        symbols.crop([x, y + i * height, x + widths[i], y + (i + 1) * height])
+        for i in range(len(widths))
+    ]
 
 # Crop glyph lists (digits, days of week, etc.)
 TimeDigit = croplist(TimeDigitWidth,   0,   0, 44)
@@ -131,19 +130,18 @@ s = str(temperature).replace('-', ';') + ':'
 drawNums(s, x, y, TempDigit)
 
 # Determine wider of humidity or wind info
-s  = str(humidity) + ':' # Appends percent glyph
+s = f'{str(humidity)}:'
 s2 = str(windSpeed)
 winDirNum = 0  # Wind direction glyph number
 if windSpeed > 0:
     for winDirNum in range(len(DirAngle) - 1):
         if windDir < DirAngle[winDirNum]: break
-winDirNum+=1      
+winDirNum+=1
 w  = Humidity.size[0] + 5 + numWidth(s, HumiDigit)
 w2 = Wind.size[0] + 5 + numWidth(s2, HumiDigit)
 if windSpeed > 0:
     w2 += 3 + Dir[winDirNum].size[0]
-if windUnits == 'kph': w2 += 3 + Kph.size[0]
-else:                  w2 += 3 + Mph.size[0]
+w2 += 3 + Kph.size[0] if windUnits == 'kph' else 3 + Mph.size[0]
 if w2 > w: w = w2
 
 # Draw humidity and wind
